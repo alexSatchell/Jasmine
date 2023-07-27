@@ -2,6 +2,9 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "Shader.h"
+#include "VAO.h"
+#include "VBO.h"
+#include "EBO.h"
 
 const unsigned int width = 800;
 const unsigned int height = 600;
@@ -11,22 +14,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 void delete_already_linked_shaders(unsigned int* shadersArr, int size);
 
-const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
-
-const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-"}\n\0";
-
 int main()
 {
+	GLfloat vertices[] =
+	{
+		// Positions
+		-0.5f, -0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f,
+		 0.0f,	0.5f, 0.0f
+	};
+
 	// Initialize the GLFW Library
 	// ---------------------------
 	glfwInit();
@@ -87,61 +84,23 @@ int main()
 	// build and compile our shader program
 	// ------------------------------------
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-	GLfloat vertices[] =
-	{
-		// Positions
-		-0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,
-		 0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,
-		 0.0f,	0.5f * float(sqrt(3)) / 3,  0.0f
-	};
-
-	// Create and compiile vertex shader
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-
-	// Create and compile fragment shader
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-
-	// Create Shader Program
-	GLuint shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	GLuint shadersToDelete [] = {vertexShader, fragmentShader};
-	delete_already_linked_shaders(shadersToDelete, 2);
-
-	// Create bufferObject on GPU with vertex data
-	GLuint VAO, VBO;
-
-	// All buffer objects are tracked by uuid that tracks that buffer
-	// Generates buffer object and returns reference id;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// VAO stores pointers to one or more VBO's & specifies how to interpret the data
-	// VAO's exist to quickly switch between multiple VBO's.. need to verify that <-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	// Unbind 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	// set up vertex data (and buffer(s)) and configure vertex attributes
+	// ------------------------------------------------------------------
 	
+	Shader shaderProgram("vertex.glsl", "fragment.glsl");
+
+	VAO VAO1;
+	VAO1.Bind();
+
+	VBO VBO1(vertices, sizeof(vertices));
+	// EBO EBO1;
+
+	VAO1.LinkVBO(VBO1, 0);
+	VAO1.Unbind();
+	VBO1.UnBind();
+
 	// Render loop - Every iteration is known as a frame
 	// ------------------------------------------------
-	// glfwWindowShouldClose: checks at the start of each
-	// loop if GLFW has been instructed to close
 	while (!glfwWindowShouldClose(window))
 	{
 		// Set the clear color for current rendering context
@@ -149,12 +108,8 @@ int main()
 		glClearColor((159.0f / 255.0f), (184.0f / 255.0f), (173.0f / 255.0f), 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// After linking, we can now use the combined shader program
-		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
-		// Render Triangle
-		glDrawArrays(GL_TRIANGLES, 0,  3);
-
+		shaderProgram.Activate();
+		VAO1.Bind();
 		/*
 		glfwSwapBuffers(window) is a function call that updates the screen by swapping
 		the back buffer (where rendering occurs) with the front buffer (what the user sees),
@@ -173,9 +128,9 @@ int main()
 	}
 
 	// Delete all objects that have been created
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shaderProgram);
+	VAO1.Delete();
+	VBO1.Delete();
+	shaderProgram.Delete();
 	glfwTerminate();
 	return 0;
 };
