@@ -6,24 +6,16 @@
 #include "VBO.h"
 #include "EBO.h"
 
-const unsigned int width = 800;
-const unsigned int height = 600;
+const unsigned int width = 1920;
+const unsigned int height = 1080;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 void delete_already_linked_shaders(unsigned int* shadersArr, int size);
 
 int main()
 {
-	GLfloat vertices[] =
-	{
-		// Positions
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,	0.5f, 0.0f
-	};
-
+	
 	// Initialize the GLFW Library
 	// ---------------------------
 	glfwInit();
@@ -63,10 +55,10 @@ int main()
 	glfwSetKeyCallback(window, key_callback);
 
 	// Callback handle mouse
-	glfwSetCursorPosCallback(window, cursor_position_callback);
+	// glfwSetCursorPosCallback(window, cursor_position_callback);
 
 	// Mouse Setup
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
 	// Initialize GLAD (OpenGL Loader Generator).
@@ -74,7 +66,7 @@ int main()
 	// GPU drivers. OS returns a functino pointer allowing us to call the functions
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		std::cout << "Failedf to initialize GLAD" << std::endl;
+		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
 
 	// Sets the OpenGL viewport independently of the window size.
@@ -83,19 +75,26 @@ int main()
 
 	// build and compile our shader program
 	// ------------------------------------
-
+	Shader shaderProgram("vertex.glsl", "fragment.glsl");
+	
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
-	
-	Shader shaderProgram("vertex.glsl", "fragment.glsl");
+	GLfloat vertices[] =
+	{
+		// Positions
+		-0.5f, -0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f,
+		 0.0f,	0.5f, 0.0f,
+	};
 
 	VAO VAO1;
 	VAO1.Bind();
 
 	VBO VBO1(vertices, sizeof(vertices));
-	// EBO EBO1;
 
 	VAO1.LinkVBO(VBO1, 0);
+
+	// Unbind all buffers to prevent accidental modifications
 	VAO1.Unbind();
 	VBO1.UnBind();
 
@@ -110,6 +109,8 @@ int main()
 
 		shaderProgram.Activate();
 		VAO1.Bind();
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		
 		/*
 		glfwSwapBuffers(window) is a function call that updates the screen by swapping
 		the back buffer (where rendering occurs) with the front buffer (what the user sees),
@@ -131,6 +132,11 @@ int main()
 	VAO1.Delete();
 	VBO1.Delete();
 	shaderProgram.Delete();
+
+	// Delete window before endeding the program
+	glfwDestroyWindow(window);
+
+	// Terminate GLFW before ending program
 	glfwTerminate();
 	return 0;
 };
@@ -147,11 +153,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		glfwSetWindowShouldClose(window, true);
 	}
 };
-
-void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
-{
-	std::cout << "x position: " << xpos << ", ypos: " << ypos << std::endl;
-}
 
 void delete_already_linked_shaders(unsigned int* shadersArr, int size)
 {

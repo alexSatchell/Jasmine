@@ -13,6 +13,8 @@ class Shader
 {
 public:
 	GLuint ID;
+	int success;
+	char infoLog[512];
 	Shader(const char* vertexFile, const char* fragmentFile);
 
 	void Activate();
